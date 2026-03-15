@@ -18,7 +18,7 @@ jobs:
             artifact: ErinSynth-VST3-Linux
             archive: ErinSynth-Linux.zip
           - name: macOS
-            os: macos-13
+            os: macos-15
             artifact: ErinSynth-VST3-macOS
             archive: ErinSynth-macOS.zip
           - name: Windows
@@ -83,10 +83,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
+          merge-multiple: false
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: ErinSynth ${{ github.ref_name }}
           generate_release_notes: true
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/ErinSynth-VST3-Linux/ErinSynth-Linux.zip
+            artifacts/ErinSynth-VST3-macOS/ErinSynth-macOS.zip
+            artifacts/ErinSynth-VST3-Windows/ErinSynth-Windows.zip
