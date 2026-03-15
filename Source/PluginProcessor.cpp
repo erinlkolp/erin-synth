@@ -215,30 +215,27 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         float lfoRate = apvts.getRawParameterValue (ParamIDs::lfoRate)->load();
         float lfoDepth = apvts.getRawParameterValue (ParamIDs::lfoDepth)->load();
 
-        filter.setResonance (resonance);
-
-        // LFO modulates cutoff: sweep from baseCutoff down by up to 4 octaves
+        // Advance LFO phase per-sample for accurate tracking, compute modulation once per block
         double lfoInc = static_cast<double> (lfoRate) / sampleRate;
         int numSamples = buffer.getNumSamples();
 
         for (int i = 0; i < numSamples; ++i)
         {
-            float lfoVal = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
             lfoPhase += lfoInc;
             if (lfoPhase >= 1.0) lfoPhase -= 1.0;
-
-            // Map LFO to cutoff: modulate in log space (octaves)
-            float modOctaves = lfoVal * lfoDepth * 4.0f;
-            float modCutoff = baseCutoff * std::pow (2.0f, modOctaves);
-            modCutoff = juce::jlimit (20.0f, 20000.0f, modCutoff);
-            filter.setCutoffFrequency (modCutoff);
-
-            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-            {
-                float* data = buffer.getWritePointer (ch);
-                data[i] = filter.processSample (ch, data[i]);
-            }
         }
+
+        float lfoVal = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
+        float modOctaves = lfoVal * lfoDepth * 4.0f;
+        float modCutoff = juce::jlimit (20.0f, 20000.0f,
+                                        baseCutoff * std::pow (2.0f, modOctaves));
+
+        filter.setResonance (resonance);
+        filter.setCutoffFrequency (modCutoff);
+
+        juce::dsp::AudioBlock<float> block (buffer);
+        juce::dsp::ProcessContextReplacing<float> context (block);
+        filter.process (context);
     }
 
     // Pre-distortion metering
