@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-22.04
+            artifact: ErinSynth-VST3-Linux
+            archive: ErinSynth-Linux.zip
+          - name: macOS
+            os: macos-13
+            artifact: ErinSynth-VST3-macOS
+            archive: ErinSynth-macOS.zip
+          - name: Windows
+            os: windows-2022
+            artifact: ErinSynth-VST3-Windows
+            archive: ErinSynth-Windows.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libx11-dev \
+            libxinerama-dev \
+            libxext-dev \
+            libfreetype6-dev \
+            libwebkit2gtk-4.0-dev \
+            libglu1-mesa-dev
+
+      - name: Clone JUCE
+        run: git clone --depth 1 https://github.com/juce-framework/JUCE ../JUCE
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Zip VST3 (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd build/ErinSynth_artefacts/Release
+          zip -r ../../../${{ matrix.archive }} VST3/
+
+      - name: Zip VST3 (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/ErinSynth_artefacts/Release/VST3/ `
+            -DestinationPath ${{ matrix.archive }}
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.archive }}
+
+  release:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ErinSynth ${{ github.ref_name }}
+          generate_release_notes: true
+          files: artifacts/**/*.zip
