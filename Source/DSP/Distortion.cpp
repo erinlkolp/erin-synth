@@ -23,7 +23,7 @@ float Distortion::processSample (float input) const
 
         case Foldback:
         {
-            float x = driven;
+            float x = juce::jlimit (-100.0f, 100.0f, driven);
             // Iterative foldback — fold signal back into [-1, 1]
             while (std::abs (x) > 1.0f)
             {
