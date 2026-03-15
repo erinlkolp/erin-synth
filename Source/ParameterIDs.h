@@ -26,9 +26,19 @@ namespace ParamIDs
     PARAMETER_ID (filterCutoff)
     PARAMETER_ID (filterResonance)
 
+    // Filter Envelope
+    PARAMETER_ID (filterEnvAttack)
+    PARAMETER_ID (filterEnvDecay)
+    PARAMETER_ID (filterEnvSustain)
+    PARAMETER_ID (filterEnvRelease)
+    PARAMETER_ID (filterEnvDepth)
+
     // LFO
     PARAMETER_ID (lfoRate)
     PARAMETER_ID (lfoDepth)
+
+    // LFO Routing
+    PARAMETER_ID (lfoPitchDepth)
 
     // Gain
     PARAMETER_ID (masterGain)
@@ -38,6 +48,9 @@ namespace ParamIDs
     PARAMETER_ID (distortionType)
     PARAMETER_ID (distortionDrive)
     PARAMETER_ID (distortionMix)
+
+    // Ring Modulator
+    PARAMETER_ID (ringModMix)
 
 #undef PARAMETER_ID
 }

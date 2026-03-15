@@ -30,6 +30,7 @@ target_sources(ErinSynth
         Source/GUI/GainSection.cpp
         Source/GUI/ErinSynthLookAndFeel.cpp
         Source/GUI/WaveformVisualizer.cpp
+        Source/GUI/FilterEnvSection.cpp
         Source/GUI/FilterSection.cpp
         Source/GUI/LFOSection.cpp)
 

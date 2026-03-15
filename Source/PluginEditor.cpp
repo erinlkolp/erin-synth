@@ -9,6 +9,7 @@ ErinSynthAudioProcessorEditor::ErinSynthAudioProcessorEditor (ErinSynthAudioProc
       adsrSection (p.apvts),
       filterSection (p.apvts),
       lfoSection (p.apvts),
+      filterEnvSection (p.apvts),
       distortionSection (p.apvts),
       gainSection (p.apvts),
       waveformVisualizer (p.getWaveformBuffer())
@@ -21,11 +22,12 @@ ErinSynthAudioProcessorEditor::ErinSynthAudioProcessorEditor (ErinSynthAudioProc
     addAndMakeVisible (adsrSection);
     addAndMakeVisible (filterSection);
     addAndMakeVisible (lfoSection);
+    addAndMakeVisible (filterEnvSection);
     addAndMakeVisible (distortionSection);
     addAndMakeVisible (gainSection);
     addAndMakeVisible (waveformVisualizer);
 
-    setSize (900, 600);
+    setSize (900, 700);
 }
 
 ErinSynthAudioProcessorEditor::~ErinSynthAudioProcessorEditor()
@@ -58,8 +60,8 @@ void ErinSynthAudioProcessorEditor::resized()
     preMeter.setBounds (preMeterArea);
     postMeter.setBounds (postMeterArea);
 
-    // Row 1 (top): Oscillators | ADSR | Filter + LFO
-    auto topRow = bounds.removeFromTop (static_cast<int> (bounds.getHeight() * 0.40f));
+    // Row 1 (top 42%): Oscillators | ADSR | Filter / LFO / FilterEnv stacked
+    auto topRow = bounds.removeFromTop (static_cast<int> (bounds.getHeight() * 0.42f));
     bounds.removeFromTop (gap);
 
     int col1W = topRow.getWidth() * 3 / 10;
@@ -70,12 +72,16 @@ void ErinSynthAudioProcessorEditor::resized()
     adsrSection.setBounds (topRow.removeFromLeft (col2W));
     topRow.removeFromLeft (gap);
 
-    // Filter + LFO stacked in the right column
-    auto filterLfoArea = topRow;
-    int filterH = filterLfoArea.getHeight() * 3 / 5;
-    filterSection.setBounds (filterLfoArea.removeFromTop (filterH - gap / 2));
-    filterLfoArea.removeFromTop (gap);
-    lfoSection.setBounds (filterLfoArea);
+    // Right column: Filter / LFO / FilterEnv stacked
+    auto rightCol = topRow;
+    int filterH   = static_cast<int> (rightCol.getHeight() * 0.35f);
+    int lfoH      = static_cast<int> (rightCol.getHeight() * 0.22f);
+
+    filterSection.setBounds (rightCol.removeFromTop (filterH));
+    rightCol.removeFromTop (gap);
+    lfoSection.setBounds (rightCol.removeFromTop (lfoH));
+    rightCol.removeFromTop (gap);
+    filterEnvSection.setBounds (rightCol);
 
     // Row 2 (middle): Waveform visualizer
     auto midRow = bounds.removeFromTop (static_cast<int> (bounds.getHeight() * 0.30f));

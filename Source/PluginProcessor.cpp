@@ -92,6 +92,36 @@ juce::AudioProcessorValueTreeState::ParameterLayout ErinSynthAudioProcessor::cre
         0.707f));
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::filterEnvAttack, 1 },
+        "Filter Env Attack",
+        juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.3f),
+        0.1f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::filterEnvDecay, 1 },
+        "Filter Env Decay",
+        juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.3f),
+        0.2f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::filterEnvSustain, 1 },
+        "Filter Env Sustain",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f),
+        0.5f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::filterEnvRelease, 1 },
+        "Filter Env Release",
+        juce::NormalisableRange<float> (0.001f, 5.0f, 0.001f, 0.3f),
+        0.3f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::filterEnvDepth, 1 },
+        "Filter Env Depth",
+        juce::NormalisableRange<float> (0.0f, 4.0f, 0.01f),
+        0.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { ParamIDs::lfoRate, 1 },
         "LFO Rate",
         juce::NormalisableRange<float> (0.1f, 20.0f, 0.01f, 0.4f),
@@ -101,6 +131,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout ErinSynthAudioProcessor::cre
         juce::ParameterID { ParamIDs::lfoDepth, 1 },
         "LFO Depth",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f),
+        0.0f));
+
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::lfoPitchDepth, 1 },
+        "LFO Pitch Depth",
+        juce::NormalisableRange<float> (0.0f, 24.0f, 0.1f),
         0.0f));
 
     layout.add (std::make_unique<juce::AudioParameterFloat> (
@@ -132,6 +168,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout ErinSynthAudioProcessor::cre
         juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f),
         100.0f));
 
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::ringModMix, 1 },
+        "Ring Mod Mix",
+        juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f),
+        0.0f));
+
     return layout;
 }
 
@@ -145,6 +187,8 @@ void ErinSynthAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     spec.numChannels = static_cast<juce::uint32> (getTotalNumOutputChannels());
 
     this->sampleRate = sampleRate;
+    filterEnv.setSampleRate (sampleRate);
+    filterEnv.reset();
 
     filter.prepare (spec);
     filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);
@@ -162,6 +206,8 @@ void ErinSynthAudioProcessor::releaseResources()
     postMeter.reset();
     waveformBuffer.reset();
     lfoPhase = 0.0;
+    filterEnv.reset();
+    heldNoteCount = 0;
 }
 
 bool ErinSynthAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -179,18 +225,53 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
     buffer.clear();
 
+    // Compute LFO value at start of block (used for pitch modulation in voices)
+    float lfoRate  = apvts.getRawParameterValue (ParamIDs::lfoRate)->load();
+    double lfoInc  = static_cast<double> (lfoRate) / sampleRate;
+    float lfoValue = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
+
+    // Update filter envelope parameters each block
+    {
+        juce::ADSR::Parameters fep;
+        fep.attack  = apvts.getRawParameterValue (ParamIDs::filterEnvAttack)->load();
+        fep.decay   = apvts.getRawParameterValue (ParamIDs::filterEnvDecay)->load();
+        fep.sustain = apvts.getRawParameterValue (ParamIDs::filterEnvSustain)->load();
+        fep.release = apvts.getRawParameterValue (ParamIDs::filterEnvRelease)->load();
+        filterEnv.setParameters (fep);
+    }
+
+    // Scan MIDI to drive filter envelope
+    for (const auto meta : midiMessages)
+    {
+        const auto msg = meta.getMessage();
+        if (msg.isNoteOn())
+        {
+            heldNoteCount++;
+            filterEnv.noteOn();
+        }
+        else if (msg.isNoteOff())
+        {
+            heldNoteCount = juce::jmax (0, heldNoteCount - 1);
+            if (heldNoteCount == 0)
+                filterEnv.noteOff();
+        }
+    }
+
     // Push current parameter values to all voices
     {
         ErinSynthVoice::Params voiceParams;
-        voiceParams.osc1Waveform = static_cast<int> (apvts.getRawParameterValue (ParamIDs::oscWaveform)->load());
-        voiceParams.osc2Waveform = static_cast<int> (apvts.getRawParameterValue (ParamIDs::osc2Waveform)->load());
-        voiceParams.osc1Level    = apvts.getRawParameterValue (ParamIDs::osc1Level)->load();
-        voiceParams.osc2Level    = apvts.getRawParameterValue (ParamIDs::osc2Level)->load();
-        voiceParams.subOscLevel  = apvts.getRawParameterValue (ParamIDs::subOscLevel)->load();
-        voiceParams.attack       = apvts.getRawParameterValue (ParamIDs::attack)->load();
-        voiceParams.decay        = apvts.getRawParameterValue (ParamIDs::decay)->load();
-        voiceParams.sustain      = apvts.getRawParameterValue (ParamIDs::sustain)->load();
-        voiceParams.release      = apvts.getRawParameterValue (ParamIDs::release)->load();
+        voiceParams.osc1Waveform  = static_cast<int> (apvts.getRawParameterValue (ParamIDs::oscWaveform)->load());
+        voiceParams.osc2Waveform  = static_cast<int> (apvts.getRawParameterValue (ParamIDs::osc2Waveform)->load());
+        voiceParams.osc1Level     = apvts.getRawParameterValue (ParamIDs::osc1Level)->load();
+        voiceParams.osc2Level     = apvts.getRawParameterValue (ParamIDs::osc2Level)->load();
+        voiceParams.subOscLevel   = apvts.getRawParameterValue (ParamIDs::subOscLevel)->load();
+        voiceParams.attack        = apvts.getRawParameterValue (ParamIDs::attack)->load();
+        voiceParams.decay         = apvts.getRawParameterValue (ParamIDs::decay)->load();
+        voiceParams.sustain       = apvts.getRawParameterValue (ParamIDs::sustain)->load();
+        voiceParams.release       = apvts.getRawParameterValue (ParamIDs::release)->load();
+        voiceParams.lfoValue      = lfoValue;
+        voiceParams.lfoPitchDepth = apvts.getRawParameterValue (ParamIDs::lfoPitchDepth)->load();
+        voiceParams.ringModMix    = apvts.getRawParameterValue (ParamIDs::ringModMix)->load() / 100.0f;
 
         for (int i = 0; i < synth.getNumVoices(); ++i)
             if (auto* voice = dynamic_cast<ErinSynthVoice*> (synth.getVoice (i)))
@@ -200,42 +281,43 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Render synth voices
     synth.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
 
-    // Apply filter with LFO modulation
+    // Apply filter with LFO + filter envelope modulation, per-sample
     {
         int filterTypeIdx = static_cast<int> (apvts.getRawParameterValue (ParamIDs::filterType)->load());
         switch (filterTypeIdx)
         {
-            case 0: filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass); break;
+            case 0: filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);  break;
             case 1: filter.setType (juce::dsp::StateVariableTPTFilterType::highpass); break;
             case 2: filter.setType (juce::dsp::StateVariableTPTFilterType::bandpass); break;
         }
 
-        float baseCutoff = apvts.getRawParameterValue (ParamIDs::filterCutoff)->load();
-        float resonance = apvts.getRawParameterValue (ParamIDs::filterResonance)->load();
-        float lfoRate = apvts.getRawParameterValue (ParamIDs::lfoRate)->load();
-        float lfoDepth = apvts.getRawParameterValue (ParamIDs::lfoDepth)->load();
+        float baseCutoff      = apvts.getRawParameterValue (ParamIDs::filterCutoff)->load();
+        float resonance       = apvts.getRawParameterValue (ParamIDs::filterResonance)->load();
+        float lfoFilterDepth  = apvts.getRawParameterValue (ParamIDs::lfoDepth)->load();
+        float filterEnvDepth  = apvts.getRawParameterValue (ParamIDs::filterEnvDepth)->load();
+        int   numSamples      = buffer.getNumSamples();
+        int   numChannels     = buffer.getNumChannels();
 
-        // Advance LFO phase per-sample for accurate tracking, compute modulation once per block
-        double lfoInc = static_cast<double> (lfoRate) / sampleRate;
-        int numSamples = buffer.getNumSamples();
+        filter.setResonance (resonance);
 
         for (int i = 0; i < numSamples; ++i)
         {
             lfoPhase += lfoInc;
             if (lfoPhase >= 1.0) lfoPhase -= 1.0;
+
+            float lfoSine   = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
+            float envVal    = filterEnv.getNextSample();
+            float modOctaves = lfoSine * lfoFilterDepth * 4.0f + envVal * filterEnvDepth;
+            float modCutoff  = juce::jlimit (20.0f, 20000.0f,
+                                             baseCutoff * std::pow (2.0f, modOctaves));
+            filter.setCutoffFrequency (modCutoff);
+
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                float* data = buffer.getWritePointer (ch);
+                data[i] = filter.processSample (ch, data[i]);
+            }
         }
-
-        float lfoVal = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
-        float modOctaves = lfoVal * lfoDepth * 4.0f;
-        float modCutoff = juce::jlimit (20.0f, 20000.0f,
-                                        baseCutoff * std::pow (2.0f, modOctaves));
-
-        filter.setResonance (resonance);
-        filter.setCutoffFrequency (modCutoff);
-
-        juce::dsp::AudioBlock<float> block (buffer);
-        juce::dsp::ProcessContextReplacing<float> context (block);
-        filter.process (context);
     }
 
     // Pre-distortion metering
@@ -250,7 +332,7 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     distortion.process (buffer);
 
     // Apply master gain
-    float gainDb = apvts.getRawParameterValue (ParamIDs::masterGain)->load();
+    float gainDb     = apvts.getRawParameterValue (ParamIDs::masterGain)->load();
     float gainLinear = juce::Decibels::decibelsToGain (gainDb);
     buffer.applyGain (gainLinear);
 

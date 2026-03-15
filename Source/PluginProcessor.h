@@ -54,6 +54,10 @@ private:
 
     double lfoPhase = 0.0;
     double sampleRate = 44100.0;
+
+    juce::ADSR filterEnv;
+    int heldNoteCount = 0;
+
     static constexpr int numVoices = 8;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ErinSynthAudioProcessor)

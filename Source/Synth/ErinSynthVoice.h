@@ -16,6 +16,9 @@ public:
         float decay = 0.1f;
         float sustain = 0.8f;
         float release = 0.3f;
+        float lfoValue      = 0.0f;
+        float lfoPitchDepth = 0.0f;
+        float ringModMix    = 0.0f;
     };
 
     void updateParams (const Params& p);
@@ -46,6 +49,11 @@ private:
     // Sub oscillator
     double subPhase = 0.0;
     double subPhaseIncrement = 0.0;
+
+    // Base (unmodulated) phase increments stored at note-on
+    double basePhaseIncrement    = 0.0;
+    double osc2BasePhaseIncrement = 0.0;
+    double subBasePhaseIncrement  = 0.0;
 
     Params currentParams;
 };

@@ -56,6 +56,17 @@ OscillatorSection::OscillatorSection (juce::AudioProcessorValueTreeState& apvts)
     subOscLevelLabel.setText ("SUB", juce::dontSendNotification);
     subOscLevelLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (subOscLevelLabel);
+
+    // Ring modulator mix
+    ringModMixSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    ringModMixSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 44, 14);
+    addAndMakeVisible (ringModMixSlider);
+    ringModMixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        apvts, ParamIDs::ringModMix, ringModMixSlider);
+
+    ringModMixLabel.setText ("Ring", juce::dontSendNotification);
+    ringModMixLabel.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (ringModMixLabel);
 }
 
 void OscillatorSection::paint (juce::Graphics& g)
@@ -97,9 +108,17 @@ void OscillatorSection::resized()
     row2.removeFromTop (2);
     osc2WaveformBox.setBounds (row2.removeFromTop (24));
 
-    // Sub row
+    // Sub + Ring row
     auto row3 = bounds;
-    auto knob3Area = row3.removeFromRight (knobSize + 10);
-    subOscLevelLabel.setBounds (row3.removeFromTop (18));
+    int halfW = row3.getWidth() / 2;
+
+    auto subArea = row3.removeFromLeft (halfW);
+    auto knob3Area = subArea.removeFromRight (knobSize + 10);
+    subOscLevelLabel.setBounds (subArea.removeFromTop (18));
     subOscLevelSlider.setBounds (knob3Area);
+
+    auto ringArea = row3;
+    auto ringKnobArea = ringArea.removeFromRight (knobSize + 10);
+    ringModMixLabel.setBounds (ringArea.removeFromTop (18));
+    ringModMixSlider.setBounds (ringKnobArea);
 }

@@ -15,15 +15,25 @@ LFOSection::LFOSection (juce::AudioProcessorValueTreeState& apvts)
     rateLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (rateLabel);
 
-    depthSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    depthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 44, 14);
-    addAndMakeVisible (depthSlider);
-    depthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-        apvts, ParamIDs::lfoDepth, depthSlider);
+    filterDepthSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    filterDepthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 44, 14);
+    addAndMakeVisible (filterDepthSlider);
+    filterDepthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        apvts, ParamIDs::lfoDepth, filterDepthSlider);
 
-    depthLabel.setText ("Depth", juce::dontSendNotification);
-    depthLabel.setJustificationType (juce::Justification::centred);
-    addAndMakeVisible (depthLabel);
+    filterDepthLabel.setText ("Filter", juce::dontSendNotification);
+    filterDepthLabel.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (filterDepthLabel);
+
+    pitchDepthSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    pitchDepthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 44, 14);
+    addAndMakeVisible (pitchDepthSlider);
+    pitchDepthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        apvts, ParamIDs::lfoPitchDepth, pitchDepthSlider);
+
+    pitchDepthLabel.setText ("Pitch", juce::dontSendNotification);
+    pitchDepthLabel.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (pitchDepthLabel);
 }
 
 void LFOSection::paint (juce::Graphics& g)
@@ -44,12 +54,16 @@ void LFOSection::resized()
     auto bounds = getLocalBounds().reduced (10);
     bounds.removeFromTop (25);
 
-    int knobW = bounds.getWidth() / 2;
+    int knobW = bounds.getWidth() / 3;
 
-    auto leftKnob = bounds.removeFromLeft (knobW);
-    rateLabel.setBounds (leftKnob.removeFromTop (14));
-    rateSlider.setBounds (leftKnob);
+    auto rateArea = bounds.removeFromLeft (knobW);
+    rateLabel.setBounds (rateArea.removeFromTop (14));
+    rateSlider.setBounds (rateArea);
 
-    depthLabel.setBounds (bounds.removeFromTop (14));
-    depthSlider.setBounds (bounds);
+    auto filterArea = bounds.removeFromLeft (knobW);
+    filterDepthLabel.setBounds (filterArea.removeFromTop (14));
+    filterDepthSlider.setBounds (filterArea);
+
+    pitchDepthLabel.setBounds (bounds.removeFromTop (14));
+    pitchDepthSlider.setBounds (bounds);
 }

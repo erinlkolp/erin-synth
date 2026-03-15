@@ -31,4 +31,9 @@ private:
     juce::Slider subOscLevelSlider;
     juce::Label subOscLevelLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> subOscLevelAttachment;
+
+    // Ring Modulator
+    juce::Slider ringModMixSlider;
+    juce::Label ringModMixLabel;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> ringModMixAttachment;
 };

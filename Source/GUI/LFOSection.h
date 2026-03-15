@@ -13,7 +13,11 @@ private:
     juce::Label rateLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> rateAttachment;
 
-    juce::Slider depthSlider;
-    juce::Label depthLabel;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> depthAttachment;
+    juce::Slider filterDepthSlider;
+    juce::Label filterDepthLabel;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> filterDepthAttachment;
+
+    juce::Slider pitchDepthSlider;
+    juce::Label pitchDepthLabel;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> pitchDepthAttachment;
 };

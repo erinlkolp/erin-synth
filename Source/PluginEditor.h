@@ -7,6 +7,7 @@
 #include "GUI/ADSRSection.h"
 #include "GUI/FilterSection.h"
 #include "GUI/LFOSection.h"
+#include "GUI/FilterEnvSection.h"
 #include "GUI/DistortionSection.h"
 #include "GUI/GainSection.h"
 #include "GUI/WaveformVisualizer.h"
@@ -31,6 +32,7 @@ private:
     ADSRSection adsrSection;
     FilterSection filterSection;
     LFOSection lfoSection;
+    FilterEnvSection filterEnvSection;
     DistortionSection distortionSection;
     GainSection gainSection;
     WaveformVisualizer waveformVisualizer;
