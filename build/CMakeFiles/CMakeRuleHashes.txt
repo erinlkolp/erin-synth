@@ -1,0 +1,2 @@
+# Hashes of file build rules.
+a2b75d4da0e7388a4dca04fdcd378341 ErinSynth_artefacts/JuceLibraryCode/JuceHeader.h
