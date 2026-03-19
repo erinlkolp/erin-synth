@@ -37,7 +37,32 @@ ErinSynthAudioProcessorEditor::~ErinSynthAudioProcessorEditor()
 
 void ErinSynthAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (ErinSynthLookAndFeel::backgroundColour);
+    auto bounds = getLocalBounds().toFloat();
+
+    // Gradient background: dark top to deep purple bottom
+    juce::ColourGradient gradient (juce::Colour (0xff12121f), 0.0f, 0.0f,
+                                   juce::Colour (0xff1f1230), 0.0f, bounds.getHeight(),
+                                   false);
+    g.setGradientFill (gradient);
+    g.fillRect (bounds);
+
+    // Subtle noise texture overlay
+    {
+        juce::Random rng (42); // fixed seed for deterministic pattern
+        g.setColour (juce::Colours::white.withAlpha (0.012f));
+
+        auto w = getWidth();
+        auto h = getHeight();
+
+        for (int yy = 0; yy < h; yy += 2)
+        {
+            for (int xx = 0; xx < w; xx += 2)
+            {
+                if (rng.nextFloat() < 0.3f)
+                    g.fillRect (xx, yy, 1, 1);
+            }
+        }
+    }
 
     g.setColour (ErinSynthLookAndFeel::textColour);
     g.setFont (20.0f);

@@ -1,6 +1,6 @@
 #include "ErinSynthLookAndFeel.h"
 
-const juce::Colour ErinSynthLookAndFeel::backgroundColour = juce::Colour (0xff1a1a2e);
+const juce::Colour ErinSynthLookAndFeel::backgroundColour = juce::Colour (0xff12121f);
 const juce::Colour ErinSynthLookAndFeel::panelColour      = juce::Colour (0xff16213e);
 const juce::Colour ErinSynthLookAndFeel::accentColour     = juce::Colour (0xff0f3460);
 const juce::Colour ErinSynthLookAndFeel::meterGreen       = juce::Colour (0xff00e676);
