@@ -3,11 +3,24 @@
 ## Build
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 2
 ```
 
+Use `Release` for DAW-loadable binaries (5 MB). `Debug` produces a 97 MB unstripped binary that DAWs may refuse to load. Always use `--parallel 2` to avoid locking the machine.
+
 JUCE must be present at `../JUCE` (sibling of this repo root).
+
+### Installing for DAW use
+
+```bash
+cp -r build/ErinSynth_artefacts/Release/VST3/ErinSynth.vst3 ~/.vst3/
+```
+
+If Mixbus fails to scan after reinstalling, clear the stale scan cache:
+```bash
+rm -f ~/.config/mixbus10/plugin_metadata/scan_log
+```
 
 ## Project layout
 
