@@ -52,6 +52,7 @@ private:
     LevelMeter postMeter;
     WaveformBuffer waveformBuffer;
 
+    juce::SmoothedValue<float> smoothedMasterGain;
     double lfoPhase = 0.0;
     double sampleRate = 44100.0;
 

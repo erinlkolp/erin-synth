@@ -190,6 +190,10 @@ void ErinSynthAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     filterEnv.setSampleRate (sampleRate);
     filterEnv.reset();
 
+    smoothedMasterGain.reset (sampleRate, 0.02);
+    smoothedMasterGain.setCurrentAndTargetValue (
+        juce::Decibels::decibelsToGain (apvts.getRawParameterValue (ParamIDs::masterGain)->load()));
+
     filter.prepare (spec);
     filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);
     distortion.prepare (spec);
@@ -300,17 +304,23 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
         filter.setResonance (resonance);
 
+        constexpr int filterUpdateInterval = 32;
+
         for (int i = 0; i < numSamples; ++i)
         {
             lfoPhase += lfoInc;
             if (lfoPhase >= 1.0) lfoPhase -= 1.0;
 
-            float lfoSine   = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
-            float envVal    = filterEnv.getNextSample();
-            float modOctaves = lfoSine * lfoFilterDepth * 4.0f + envVal * filterEnvDepth;
-            float modCutoff  = juce::jlimit (20.0f, 20000.0f,
-                                             baseCutoff * std::pow (2.0f, modOctaves));
-            filter.setCutoffFrequency (modCutoff);
+            float envVal = filterEnv.getNextSample();
+
+            if (i % filterUpdateInterval == 0)
+            {
+                float lfoSine    = static_cast<float> (std::sin (2.0 * juce::MathConstants<double>::pi * lfoPhase));
+                float modOctaves = lfoSine * lfoFilterDepth * 4.0f + envVal * filterEnvDepth;
+                float modCutoff  = juce::jlimit (20.0f, 20000.0f,
+                                                 baseCutoff * std::pow (2.0f, modOctaves));
+                filter.setCutoffFrequency (modCutoff);
+            }
 
             for (int ch = 0; ch < numChannels; ++ch)
             {
@@ -331,10 +341,26 @@ void ErinSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     distortion.setMix (apvts.getRawParameterValue (ParamIDs::distortionMix)->load());
     distortion.process (buffer);
 
-    // Apply master gain
-    float gainDb     = apvts.getRawParameterValue (ParamIDs::masterGain)->load();
-    float gainLinear = juce::Decibels::decibelsToGain (gainDb);
-    buffer.applyGain (gainLinear);
+    // Apply master gain (smoothed to avoid zipper noise)
+    {
+        float gainDb     = apvts.getRawParameterValue (ParamIDs::masterGain)->load();
+        float gainLinear = juce::Decibels::decibelsToGain (gainDb);
+        smoothedMasterGain.setTargetValue (gainLinear);
+
+        if (smoothedMasterGain.isSmoothing())
+        {
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+            {
+                float g = smoothedMasterGain.getNextValue();
+                for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+                    buffer.getWritePointer (ch)[i] *= g;
+            }
+        }
+        else
+        {
+            buffer.applyGain (smoothedMasterGain.getTargetValue());
+        }
+    }
 
     // Post-distortion / output metering
     postMeter.measureBlock (buffer);

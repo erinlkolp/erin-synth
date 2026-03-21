@@ -23,16 +23,12 @@ float Distortion::processSample (float input) const
 
         case Foldback:
         {
-            float x = juce::jlimit (-100.0f, 100.0f, driven);
-            // Iterative foldback — fold signal back into [-1, 1]
-            while (std::abs (x) > 1.0f)
-            {
-                if (x > 1.0f)
-                    x = 2.0f - x;
-                else if (x < -1.0f)
-                    x = -2.0f - x;
-            }
-            return x;
+            // O(1) foldback via triangle wave math (replaces iterative loop)
+            float phase = (driven + 1.0f) * 0.5f;
+            phase = std::fmod (phase, 2.0f);
+            if (phase < 0.0f) phase += 2.0f;
+            float folded = (phase <= 1.0f) ? phase : 2.0f - phase;
+            return folded * 2.0f - 1.0f;
         }
 
         case Bitcrush:
@@ -41,14 +37,14 @@ float Distortion::processSample (float input) const
             float bitDepth = juce::jmap (driveLinear, 1.0f, 100.0f, 16.0f, 2.0f);
             bitDepth = juce::jlimit (2.0f, 16.0f, bitDepth);
             float levels = std::pow (2.0f, bitDepth);
-            return std::round (driven * levels) / levels;
+            return juce::jlimit (-1.0f, 1.0f, std::round (driven * levels) / levels);
         }
 
         case Waveshape:
         {
             // Soft cubic waveshaper
             float x = driven;
-            return x * (27.0f + x * x) / (27.0f + 9.0f * x * x);
+            return juce::jlimit (-1.0f, 1.0f, x * (27.0f + x * x) / (27.0f + 9.0f * x * x));
         }
 
         default:

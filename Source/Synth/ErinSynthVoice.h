@@ -56,4 +56,10 @@ private:
     double subBasePhaseIncrement  = 0.0;
 
     Params currentParams;
+
+    // Smoothed level parameters (avoid clicks on rapid changes)
+    juce::SmoothedValue<float> smoothedOsc1Level { 1.0f };
+    juce::SmoothedValue<float> smoothedOsc2Level { 0.0f };
+    juce::SmoothedValue<float> smoothedSubLevel  { 0.0f };
+    juce::SmoothedValue<float> smoothedRingMix   { 0.0f };
 };

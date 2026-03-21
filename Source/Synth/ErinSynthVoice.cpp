@@ -26,14 +26,25 @@ void ErinSynthVoice::startNote (int midiNoteNumber, float velocity,
     osc2BasePhaseIncrement = osc2PhaseIncrement;
     subBasePhaseIncrement  = subPhaseIncrement;
 
+    adsr.setSampleRate (getSampleRate());
     juce::ADSR::Parameters adsrParams;
     adsrParams.attack  = currentParams.attack;
     adsrParams.decay   = currentParams.decay;
     adsrParams.sustain = currentParams.sustain;
     adsrParams.release = currentParams.release;
     adsr.setParameters (adsrParams);
-    adsr.setSampleRate (getSampleRate());
     adsr.noteOn();
+
+    // Initialize smoothed levels (no ramp on note start)
+    double sr = getSampleRate();
+    smoothedOsc1Level.reset (sr, 0.005);
+    smoothedOsc2Level.reset (sr, 0.005);
+    smoothedSubLevel.reset  (sr, 0.005);
+    smoothedRingMix.reset   (sr, 0.005);
+    smoothedOsc1Level.setCurrentAndTargetValue (currentParams.osc1Level);
+    smoothedOsc2Level.setCurrentAndTargetValue (currentParams.osc2Level);
+    smoothedSubLevel.setCurrentAndTargetValue  (currentParams.subOscLevel);
+    smoothedRingMix.setCurrentAndTargetValue   (currentParams.ringModMix);
 }
 
 void ErinSynthVoice::stopNote (float /*velocity*/, bool allowTailOff)
@@ -87,9 +98,12 @@ void ErinSynthVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer,
 
     int wf1 = currentParams.osc1Waveform;
     int wf2 = currentParams.osc2Waveform;
-    float lvl1 = currentParams.osc1Level;
-    float lvl2 = currentParams.osc2Level;
-    float subLvl = currentParams.subOscLevel;
+
+    // Set smoothing targets for level parameters
+    smoothedOsc1Level.setTargetValue (currentParams.osc1Level);
+    smoothedOsc2Level.setTargetValue (currentParams.osc2Level);
+    smoothedSubLevel.setTargetValue  (currentParams.subOscLevel);
+    smoothedRingMix.setTargetValue   (currentParams.ringModMix);
 
     // Compute pitch-modulated phase increments from LFO (block-rate)
     float pitchMod = std::pow (2.0f, currentParams.lfoValue * currentParams.lfoPitchDepth / 12.0f);
@@ -97,11 +111,14 @@ void ErinSynthVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer,
     double modOsc2PhaseInc = osc2BasePhaseIncrement * static_cast<double> (pitchMod);
     double modSubPhaseInc  = subBasePhaseIncrement  * static_cast<double> (pitchMod);
 
-    float ringMix = currentParams.ringModMix;
-
     for (int i = 0; i < numSamples; ++i)
     {
         float envValue = adsr.getNextSample();
+
+        float lvl1   = smoothedOsc1Level.getNextValue();
+        float lvl2   = smoothedOsc2Level.getNextValue();
+        float subLvl = smoothedSubLevel.getNextValue();
+        float ringMix = smoothedRingMix.getNextValue();
 
         float osc1 = generateSample (wf1, phase);
         float osc2 = generateSample (wf2, osc2Phase);
