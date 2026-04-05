@@ -18,7 +18,7 @@ jobs:
             artifact: ErinSynth-VST3-Linux-x86_64
             archive: ErinSynth-Linux-x86_64.zip
             cmake_flags: ""
-- name: macOS-Universal
+          - name: macOS-Universal
             os: macos-15
             artifact: ErinSynth-VST3-macOS-Universal
             archive: ErinSynth-macOS.zip

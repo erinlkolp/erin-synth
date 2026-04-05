@@ -17,7 +17,7 @@ jobs:
           - name: Linux x86_64
             os: ubuntu-22.04
             cmake_flags: ""
-- name: macOS Universal
+          - name: macOS Universal
             os: macos-15
             cmake_flags: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
           - name: Windows
