@@ -51,6 +51,10 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Codesign (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --force --deep --sign - build/ErinSynth_artefacts/Release/VST3/ErinSynth.vst3
+
       - name: Upload VST3
         uses: actions/upload-artifact@v4
         with:

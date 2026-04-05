@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(ErinSynth VERSION 0.1.0)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS version")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../JUCE ${CMAKE_CURRENT_BINARY_DIR}/JUCE)
 
 juce_add_plugin(ErinSynth
