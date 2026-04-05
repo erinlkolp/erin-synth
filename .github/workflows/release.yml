@@ -27,7 +27,7 @@ jobs:
             os: macos-15
             artifact: ErinSynth-VST3-macOS-Universal
             archive: ErinSynth-macOS.zip
-            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
           - name: Windows
             os: windows-2022
             artifact: ErinSynth-VST3-Windows

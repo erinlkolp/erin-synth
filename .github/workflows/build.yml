@@ -22,7 +22,7 @@ jobs:
             cmake_flags: ""
           - name: macOS Universal
             os: macos-15
-            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
           - name: Windows
             os: windows-2022
             cmake_flags: ""
