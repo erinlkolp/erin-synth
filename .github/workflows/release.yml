@@ -13,18 +13,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux
+          - name: Linux-x86_64
             os: ubuntu-22.04
-            artifact: ErinSynth-VST3-Linux
-            archive: ErinSynth-Linux.zip
-          - name: macOS
+            artifact: ErinSynth-VST3-Linux-x86_64
+            archive: ErinSynth-Linux-x86_64.zip
+            cmake_flags: ""
+          - name: Linux-ARM64
+            os: ubuntu-22.04-arm
+            artifact: ErinSynth-VST3-Linux-ARM64
+            archive: ErinSynth-Linux-ARM64.zip
+            cmake_flags: ""
+          - name: macOS-Universal
             os: macos-15
-            artifact: ErinSynth-VST3-macOS
+            artifact: ErinSynth-VST3-macOS-Universal
             archive: ErinSynth-macOS.zip
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
           - name: Windows
             os: windows-2022
             artifact: ErinSynth-VST3-Windows
             archive: ErinSynth-Windows.zip
+            cmake_flags: ""
 
     steps:
       - name: Checkout
@@ -47,7 +55,7 @@ jobs:
         run: git clone --depth 1 https://github.com/juce-framework/JUCE ../JUCE
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -91,6 +99,7 @@ jobs:
           name: ErinSynth ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            artifacts/ErinSynth-VST3-Linux/ErinSynth-Linux.zip
-            artifacts/ErinSynth-VST3-macOS/ErinSynth-macOS.zip
+            artifacts/ErinSynth-VST3-Linux-x86_64/ErinSynth-Linux-x86_64.zip
+            artifacts/ErinSynth-VST3-Linux-ARM64/ErinSynth-Linux-ARM64.zip
+            artifacts/ErinSynth-VST3-macOS-Universal/ErinSynth-macOS.zip
             artifacts/ErinSynth-VST3-Windows/ErinSynth-Windows.zip

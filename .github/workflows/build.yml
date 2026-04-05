@@ -14,12 +14,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux
+          - name: Linux x86_64
             os: ubuntu-22.04
             cmake_flags: ""
-          - name: macOS
-            os: macos-15
+          - name: Linux ARM64
+            os: ubuntu-22.04-arm
             cmake_flags: ""
+          - name: macOS Universal
+            os: macos-15
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
           - name: Windows
             os: windows-2022
             cmake_flags: ""
@@ -51,23 +54,8 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Upload VST3 (Linux)
-        if: runner.os == 'Linux'
+      - name: Upload VST3
         uses: actions/upload-artifact@v4
         with:
-          name: ErinSynth-VST3-Linux
-          path: build/ErinSynth_artefacts/Release/VST3/
-
-      - name: Upload VST3 (macOS)
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ErinSynth-VST3-macOS
-          path: build/ErinSynth_artefacts/Release/VST3/
-
-      - name: Upload VST3 (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ErinSynth-VST3-Windows
+          name: ErinSynth-VST3-${{ matrix.name }}
           path: build/ErinSynth_artefacts/Release/VST3/
