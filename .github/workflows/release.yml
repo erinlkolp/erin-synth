@@ -18,12 +18,7 @@ jobs:
             artifact: ErinSynth-VST3-Linux-x86_64
             archive: ErinSynth-Linux-x86_64.zip
             cmake_flags: ""
-          - name: Linux-ARM64
-            os: ubuntu-22.04-arm
-            artifact: ErinSynth-VST3-Linux-ARM64
-            archive: ErinSynth-Linux-ARM64.zip
-            cmake_flags: ""
-          - name: macOS-Universal
+- name: macOS-Universal
             os: macos-15
             artifact: ErinSynth-VST3-macOS-Universal
             archive: ErinSynth-macOS.zip
@@ -100,6 +95,5 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/ErinSynth-VST3-Linux-x86_64/ErinSynth-Linux-x86_64.zip
-            artifacts/ErinSynth-VST3-Linux-ARM64/ErinSynth-Linux-ARM64.zip
             artifacts/ErinSynth-VST3-macOS-Universal/ErinSynth-macOS.zip
             artifacts/ErinSynth-VST3-Windows/ErinSynth-Windows.zip
