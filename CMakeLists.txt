@@ -14,6 +14,7 @@ juce_add_plugin(ErinSynth
     PLUGIN_MANUFACTURER_CODE Erin
     PLUGIN_CODE Erns
     FORMATS VST3 Standalone
+    VST3_CATEGORIES Instrument Synth
     PRODUCT_NAME "ErinSynth")
 
 juce_generate_juce_header(ErinSynth)
